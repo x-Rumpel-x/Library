@@ -10,19 +10,24 @@ ENV_PATH = os.path.join(BASE_DIR, ".env")
 # Загружаем переменные окружения из .env файла
 load_dotenv(ENV_PATH)
 
-# Чтение URL базы данных из переменных окружения
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Получаем переменные из окружения (они были загружены из .env)
+db_user = os.getenv("DB_USER")
+db_pass = os.getenv("DB_PASS")
+db_host = os.getenv("DB_HOST")
+db_name = os.getenv("DB_NAME")
 
-if not DATABASE_URL:
+# Чтение URL базы данных из переменных окружения
+DATABASE_URL_SQLALCHEMY = f"postgresql+asyncpg://{db_user}:{db_pass}@{db_host}/{db_name}"
+
+if not DATABASE_URL_SQLALCHEMY:
     raise ValueError("DATABASE_URL не задан в файле .env")
 
 # Создание движка и сессий SQLAlchemy
-engine = create_async_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
+engine = create_async_engine(DATABASE_URL_SQLALCHEMY)
 
 
 # Генератор для получения сессии базы данных
 async def get_db():
-    async with SessionLocal() as session:
+    async with AsyncSession(engine) as session:
         yield session
